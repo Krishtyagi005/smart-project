@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Classroom Manager</title>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- JOINED CSS CODE STARTS HERE -->
+    <style>
+        :root { 
+            --primary: #2563eb; 
+            --secondary: #1e40af; 
+            --bg: hsl(0, 0%, 59%); 
+            --white: #f6f4f4; 
+            --text: #000000; 
+            --border: #4c6ba8;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar */
+        .sidebar { width: 260px; background: var(--white); padding: 25px; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .logo { font-size: 1.6rem; color: var(--primary); font-weight: 800; margin-bottom: 40px; display: flex; align-items: center; gap: 12px; }
+        .nav-links { list-style: none; }
+        .nav-links li { padding: 14px 18px; cursor: pointer; border-radius: 10px; margin-bottom: 8px; color: #6b7280; font-weight: 500; transition: 0.2s; display: flex; align-items: center; gap: 12px; }
+        .nav-links li:hover, .nav-links li.active { background: #eff6ff; color: var(--primary); }
+        
+        /* Main Content */
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; position: relative; }
+        .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .page-title { font-size: 1.8rem; font-weight: 700; }
+        .date-display { color: #6b7280; font-weight: 500; }
+
+        /* Tabs */
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Dashboard Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 25px; margin-bottom: 30px; }
+        .stat-card { background: var(--white); padding: 25px; border-radius: 15px; display: flex; align-items: center; gap: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+        .icon { width: 55px; height: 55px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.4rem; }
+        .icon.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .icon.green { background: linear-gradient(135deg, #10b981, #059669); }
+        .icon.purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .stat-details h3 { font-size: 0.9rem; color: #6b7280; margin-bottom: 5px; }
+        .stat-details p { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+
+        /* Buttons & Forms */
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary:hover { background: var(--secondary); }
+        .form-control { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-top: 8px; outline: none; }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        
+        /* Timetable */
+        .timetable-container { background: var(--white); border-radius: 15px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+        .timetable-header { display: grid; grid-template-columns: 80px repeat(5, 1fr); background: #f8fafc; border-bottom: 1px solid var(--border); font-weight: 600; }
+        .timetable-header div { padding: 15px; text-align: center; color: #64748b; }
+        .time-row { display: grid; grid-template-columns: 80px repeat(5, 1fr); border-bottom: 1px solid var(--border); min-height: 100px; }
+        .time-label { padding: 15px; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: #94a3b8; font-weight: 500; font-size: 0.9rem; }
+        .time-slot { border-right: 1px solid var(--border); padding: 5px; transition: background 0.2s; position: relative; }
+        .time-slot:hover { background: #f8fafc; }
+        .class-entry { background: #eff6ff; color: #1e40af; padding: 8px; border-radius: 6px; font-size: 0.8rem; border-left: 4px solid var(--primary); cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin: 2px; }
+        .class-entry:hover { transform: translateY(-2px); transition: 0.2s; }
+
+        /* Classrooms Grid */
+        .classroom-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .classroom-card { background: var(--white); padding: 25px; border-radius: 15px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
+        .classroom-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: var(--primary); }
+        .classroom-card h3 { margin-bottom: 15px; font-size: 1.2rem; }
+        .classroom-card p { margin-bottom: 8px; color: #4b5563; font-size: 0.95rem; }
+
+        /* Table */
+        .table-container { background: var(--white); border-radius: 15px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { background: #f8fafc; padding: 15px 20px; text-align: left; font-weight: 600; color: #64748b; }
+        .data-table td { padding: 15px 20px; border-bottom: 1px solid var(--border); color: #334155; }
+        .data-table tr:last-child td { border-bottom: none; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--white); padding: 35px; border-radius: 20px; width: 450px; position: relative; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .close-modal { position: absolute; right: 25px; top: 20px; cursor: pointer; font-size: 1.5rem; color: #9ca3af; }
+        
+        .chart-placeholder { display: flex; align-items: flex-end; justify-content: space-around; height: 250px; padding-top: 30px; }
+        .chart-bar { width: 40px; background: var(--primary); border-radius: 6px 6px 0 0; transition: height 0.5s ease; opacity: 0.85; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo"><i class="fas fa-graduation-cap"></i> SmartClass</div>
+        <ul class="nav-links">
+            <li class="active" onclick="switchTab('dashboard')"><i class="fas fa-home"></i> Dashboard</li>
+            <li onclick="switchTab('timetable')"><i class="fas fa-calendar-alt"></i> Timetable</li>
+            <li onclick="switchTab('classrooms')"><i class="fas fa-door-open"></i> Classrooms</li>
+            <li onclick="switchTab('classes')"><i class="fas fa-book"></i> Classes</li>
+            <li onclick="switchTab('reports')"><i class="fas fa-chart-pie"></i> Reports</li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <header class="top-header">
+            <div class="page-title" id="page-title">Dashboard</div>
+            <div class="date-display" id="current-date">Loading Date...</div>
+        </header>
+
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="icon blue"><i class="fas fa-chalkboard-teacher"></i></div>
+                    <div class="stat-details"><h3>Total Classes</h3><p id="total-classes">0</p></div>
+                </div>
+                <div class="stat-card">
+                    <div class="icon green"><i class="fas fa-door-closed"></i></div>
+                    <div class="stat-details"><h3>Classrooms</h3><p id="total-classrooms">0</p></div>
+                </div>
+                <div class="stat-card">
+                    <div class="icon purple"><i class="fas fa-clock"></i></div>
+                    <div class="stat-details"><h3>Active Slots</h3><p id="active-slots">0</p></div>
+                </div>
+            </div>
+            <div style="background:white; padding:25px; border-radius:15px; border:1px solid var(--border);">
+                <h3 style="margin-bottom:20px;">Quick Actions</h3>
+                <button class="btn-primary" onclick="openModal('add-class-modal')"><i class="fas fa-plus"></i> Schedule Class</button>
+                <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border); margin-left:10px;" onclick="openModal('add-classroom-modal')"><i class="fas fa-plus"></i> Add Room</button>
+            </div>
+        </div>
+
+        <!-- TIMETABLE -->
+        <div id="timetable" class="tab-content">
+            <div style="margin-bottom:20px; display:flex; justify-content:space-between;">
+                <select id="timetable-filter-room" class="form-control" style="width:200px; margin:0;" onchange="renderTimetable()">
+                    <option value="all">All Classrooms</option>
+                </select>
+                <button class="btn-primary" onclick="openModal('add-class-modal')">Schedule Class</button>
+            </div>
+            <div class="timetable-container">
+                <div class="timetable-header">
+                    <div>Time</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div>
+                </div>
+                <div id="timetable-grid"></div>
+            </div>
+        </div>
+
+        <!-- CLASSROOMS -->
+        <div id="classrooms" class="tab-content">
+            <div style="margin-bottom:20px; text-align:right;">
+                <button class="btn-primary" onclick="openModal('add-classroom-modal')">Add Classroom</button>
+            </div>
+            <div class="classroom-grid" id="classroom-list"></div>
+        </div>
+
+        <!-- CLASSES LIST -->
+        <div id="classes" class="tab-content">
+            <div class="table-container">
+                <table class="data-table">
+                    <thead><tr><th>ID</th><th>Subject</th><th>Teacher</th><th>Room</th><th>Time</th><th>Action</th></tr></thead>
+                    <tbody id="classes-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- REPORTS -->
+        <div id="reports" class="tab-content">
+            <div class="stat-card" style="display:block; height:auto;">
+                <h3 style="margin-bottom:20px;">Weekly Class Distribution</h3>
+                <div class="chart-placeholder" id="chart-classes-day"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="add-class-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('add-class-modal')">&times;</span>
+            <h2 style="margin-bottom:20px;">Schedule Class</h2>
+            <form id="add-class-form">
+                <label>Class ID</label><input type="text" name="class_id" class="form-control" required placeholder="e.g. CS101">
+                <label style="display:block; margin-top:15px;">Subject</label><input type="text" name="name" class="form-control" required placeholder="e.g. Java Programming">
+                <label style="display:block; margin-top:15px;">Teacher</label><input type="text" name="teacher" class="form-control" required placeholder="e.g. Prof. Smith">
+                <label style="display:block; margin-top:15px;">Room</label><select name="room_name" id="modal-room-select" class="form-control" required></select>
+                <label style="display:block; margin-top:15px;">Day</label>
+                <select name="day" class="form-control" required>
+                    <option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option>
+                </select>
+                <div style="display:flex; gap:15px; margin-top:15px;">
+                    <div style="flex:1;"><label>Start</label><input type="time" name="start_time" class="form-control" required></div>
+                    <div style="flex:1;"><label>End</label><input type="time" name="end_time" class="form-control" required></div>
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%; margin-top:25px;">Save Schedule</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="add-classroom-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('add-classroom-modal')">&times;</span>
+            <h2 style="margin-bottom:20px;">Add Classroom</h2>
+            <form id="add-classroom-form">
+                <label>Room Name</label><input type="text" name="name" class="form-control" required placeholder="e.g. Lab 101">
+                <label style="display:block; margin-top:15px;">Capacity</label><input type="number" name="capacity" class="form-control" required>
+                <label style="display:block; margin-top:15px;">Equipment</label><input type="text" name="equipment" class="form-control" placeholder="Projector, Whiteboard...">
+                <button type="submit" class="btn-primary" style="width:100%; margin-top:25px;">Add Room</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- JOINED JAVASCRIPT CODE STARTS HERE -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const API_BASE_URL = 'http://127.0.0.1:8000/api';
+            let allClassrooms = [];
+            let allClasses = [];
+
+            // --- TABS ---
+            window.switchTab = (tabId) => {
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.nav-links li').forEach(el => el.classList.remove('active'));
+                document.getElementById(tabId).classList.add('active');
+                document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+                document.getElementById('page-title').innerText = tabId.charAt(0).toUpperCase() + tabId.slice(1);
+                
+                if(tabId === 'timetable') renderTimetable();
+                if(tabId === 'reports') renderReports();
+            };
+
+            // --- DATA LOADING ---
+            async function loadData() {
+                try {
+                    const [rooms, classes, stats] = await Promise.all([
+                        fetch(`${API_BASE_URL}/classrooms`).then(res => res.json()),
+                        fetch(`${API_BASE_URL}/classes`).then(res => res.json()),
+                        fetch(`${API_BASE_URL}/dashboard-stats`).then(res => res.json())
+                    ]);
+                    
+                    allClassrooms = rooms;
+                    allClasses = classes;
+                    
+                    // Update UI
+                    document.getElementById('total-classes').innerText = stats.totalClasses;
+                    document.getElementById('total-classrooms').innerText = stats.totalClassrooms;
+                    document.getElementById('active-slots').innerText = classes.length;
+                    
+                    populateRoomSelects();
+                    renderClassrooms();
+                    renderClassesTable();
+                    renderTimetable();
+                } catch (error) {
+                    console.error("Backend not connected", error);
+                    // alert("Note: Backend API is not running. Data will not save.");
+                }
+            }
+
+               function populateRoomSelects() {
+                 const select = document.getElementById('modal-room-select');
+    
+               // Check if we have rooms
+               if (allClassrooms.length === 0) {
+               select.innerHTML = '<option value="">No rooms available - Add one first!</option>';
+                return;
+                }
+
+                // Create options
+                 const options = allClassrooms.map(r => `<option value="${r.name}">${r.name}</option>`).join('');
+                 select.innerHTML = options;
+    
+                // Also update the filter dropdown
+                const filter = document.getElementById('timetable-filter-room');
+                 if (filter) {
+                   filter.innerHTML = `<option value="all">All Classrooms</option>` + options;
+            
+            }
+
+            }
+
+            // --- RENDERERS ---
+            window.renderTimetable = () => {
+                const grid = document.getElementById('timetable-grid');
+                grid.innerHTML = '';
+                const filter = document.getElementById('timetable-filter-room').value;
+
+                for (let h = 7; h <= 18; h++) {
+                    const timeStr = `${h.toString().padStart(2,'0')}:00`;
+                    const row = document.createElement('div');
+                    row.className = 'time-row';
+                    row.innerHTML = `<div class="time-label">${timeStr}</div>`;
+
+                    ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].forEach(day => {
+                        const cell = document.createElement('div');
+                        cell.className = 'time-slot';
+                        
+                        const cls = allClasses.find(c => {
+                            const startH = parseInt(c.start_time.split(':')[0]);
+                            return c.day === day && startH === h && (filter === 'all' || c.room_name === filter);
+                        });
+
+                        if (cls) {
+                            cell.innerHTML = `
+                                <div class="class-entry" onclick="deleteClass(${cls.id})">
+                                    <div style="font-weight:bold;">${cls.name}</div>
+                                    <div>${cls.room_name}</div>
+                                    <div style="font-size:0.7rem; opacity:0.8;">${cls.teacher}</div>
+                                </div>`;
+                        }
+                        row.appendChild(cell);
+                    });
+                    grid.appendChild(row);
+                }
+            };
+
+            window.renderClassrooms = () => {
+                const container = document.getElementById('classroom-list');
+                container.innerHTML = allClassrooms.map(r => `
+                    <div class="classroom-card">
+                        <h3>${r.name}</h3>
+                        <p><i class="fas fa-users"></i> Capacity: ${r.capacity}</p>
+                        <p><i class="fas fa-tv"></i> ${r.equipment}</p>
+                    </div>
+                `).join('');
+            };
+
+            window.renderClassesTable = () => {
+                document.getElementById('classes-table-body').innerHTML = allClasses.map(c => `
+                    <tr>
+                        <td><b>${c.class_id}</b></td>
+                        <td>${c.name}</td>
+                        <td>${c.teacher}</td>
+                        <td>${c.room_name}</td>
+                        <td>${c.day}, ${c.start_time} - ${c.end_time}</td>
+                        <td><i class="fas fa-trash" style="color:red; cursor:pointer;" onclick="deleteClass(${c.id})"></i></td>
+                    </tr>
+                `).join('');
+            };
+
+            window.renderReports = () => {
+                const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+                const container = document.getElementById('chart-classes-day');
+                container.innerHTML = days.map(day => {
+                    const count = allClasses.filter(c => c.day === day).length;
+                    const height = count > 0 ? (count * 25) + 'px' : '5px';
+                    return `
+                        <div style="text-align:center;">
+                            <div class="chart-bar" style="height:${height}"></div>
+                            <div style="margin-top:10px; font-size:0.8rem; color:#64748b;">${day.substring(0,3)}</div>
+                        </div>
+                    `;
+                }).join('');
+            };
+
+            // --- ACTIONS ---
+            document.getElementById('add-class-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const data = Object.fromEntries(new FormData(e.target));
+                await fetch(`${API_BASE_URL}/classes`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+                });
+                closeModal('add-class-modal');
+                loadData();
+            });
+
+            document.getElementById('add-classroom-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const data = Object.fromEntries(new FormData(e.target));
+                await fetch(`${API_BASE_URL}/classrooms`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+                });
+                closeModal('add-classroom-modal');
+                loadData();
+            });
+
+            window.deleteClass = async (id) => {
+                if(confirm("Delete this class schedule?")) {
+                    await fetch(`${API_BASE_URL}/classes/${id}`, { method: 'DELETE' });
+                    loadData();
+                }
+            };
+
+            // --- UTILS ---
+            window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+            window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+            document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            // Start
+            loadData();
+        });
+    </script>
+</body>
+</html>
